@@ -1,12 +1,14 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import LandingPage from "./components/LandingPage";
-import DoctorView from "./components/DoctorView";
-import PatientView from "./components/PatientView";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import ProtectedRoute from "./auth/ProtectedRoute";
 
+import LandingPage from "./components/LandingPage";
+import DoctorView from "./components/doctor/DoctorView";
+import PatientView from "./components/PatientView";
+import AdminView from "./components/admin/AdminView";
+
 function AppRoutes() {
-  const { isAuthenticated, isDoctor, isPatient } = useAuth();
+  const { isAuthenticated, isDoctor, isPatient, isAdmin } = useAuth();
 
   return (
     <Routes>
@@ -25,6 +27,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute isAllowed={isAuthenticated && isPatient}>
             <PatientView />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute isAllowed={isAuthenticated && isAdmin}>
+            <AdminView />
           </ProtectedRoute>
         }
       />

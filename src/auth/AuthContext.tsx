@@ -20,7 +20,7 @@ type AuthContextType = {
   isPatient: boolean;
   isAdmin: boolean;
 
-  login: (payload: LoginPayload) => Promise<void>;
+  login: (payload: LoginPayload) => Promise<AuthUser>;
   signupPatient: (payload: SignupPayload) => Promise<void>;
   logout: () => Promise<void> | void;
 };
@@ -49,9 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   // --- Actions ---
-  async function login(payload: LoginPayload): Promise<void> {
+  async function login(payload: LoginPayload): Promise<AuthUser> {
     const res: AuthResponse = await apiLogin(payload);
     setUser(res.user);
+    return res.user;
   }
 
   async function signupPatient(payload: SignupPayload): Promise<void> {
@@ -66,7 +67,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       doctor_profile: undefined,
     });
-    setUser(res.user);
+    if (res?.user) {
+      setUser(res.user);
+    }
+
+    if (!res?.token && !(res as any).access) {
+      const loginRes = await apiLogin({ email: payload.email, password: payload.password });
+      setUser(loginRes.user);
+    }
   }
 
   async function logout(): Promise<void> {

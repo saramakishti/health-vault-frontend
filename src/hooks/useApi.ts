@@ -10,7 +10,7 @@ import type {
 } from "../types/auth";
 
 const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string) || "http://127.0.0.1:8000";
+  (import.meta.env.VITE_API_BASE_URL as string) || "http://127.0.0.1:8000/api";
 
 const PATHS = {
   login: "/authentication/knock/knock/",
@@ -18,6 +18,18 @@ const PATHS = {
   logout: "/authentication/logout/",
   refresh: "/authentication/refresh/",
 };
+
+function unwrapResult<T>(data: any): T {
+  return (data && typeof data === "object" && "result" in data) ? (data.result as T) : (data as T);
+}
+
+function inferRole(u: any): "Admin" | "Doctor" | "Patient" {
+  if (typeof u?.role === "string") return u.role;
+  if (u?.is_superuser || u?.is_staff) return "Admin";
+  if (u?.group_name === "Doctor" || u?.group === 2) return "Doctor";
+  if (u?.group_name === "Admin" || u?.group === 1) return "Admin";
+  return "Patient";
+}
 
 /* ---------- Utilities ---------- */
 function getStoredTokens(): AuthTokens | null {
@@ -170,14 +182,29 @@ export function useApi() {
   /* ----- Auth convenience (login/signup/logout) ----- */
   const login = useCallback(
     async (payload: LoginPayload): Promise<AuthResponse> => {
-      const data = await post<AuthResponse>(PATHS.login, payload);
-      const nextTokens: AuthTokens =
-        ("access" in data || "refresh" in data) ? data : { token: (data as any).token };
-      setTokens(nextTokens);
-      return data;
+      try {
+        const raw = await api.post(PATHS.login, payload).then(r => r.data);
+        const unwrapped = unwrapResult<{ access?: string; refresh?: string; token?: string; user: any }>(raw);
+
+        const nextTokens: AuthTokens =
+          unwrapped?.access || unwrapped?.refresh
+            ? { access: unwrapped.access as string, refresh: unwrapped.refresh }
+            : { token: (unwrapped as any).token as string };
+
+        setTokens(nextTokens);
+
+        const normalizedUser = {
+          ...unwrapped.user,
+          role: inferRole(unwrapped.user),
+        };
+        return { ...(nextTokens as any), user: normalizedUser } as AuthResponse;
+      } catch (err) {
+        throw new Error(extractErr(err));
+      }
     },
-    [post, setTokens]
+    [setTokens]
   );
+
 
   const signup = useCallback(
     async (payload: SignupPayload): Promise<AuthResponse> => {

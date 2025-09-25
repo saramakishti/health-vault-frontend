@@ -1,11 +1,15 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
+import { useAuth } from "../auth/AuthContext";
 
 const SignUp: React.FC = () => {
+  const nav = useNavigate();
+  const { signupPatient, loading, error, isPatient, isDoctor } = useAuth();
 
   const [form, setForm] = useState({
     first_name: "",
@@ -18,8 +22,7 @@ const SignUp: React.FC = () => {
     confirm: "",
   });
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>("");
+  const [localError, setLocalError] = useState<string>("");
 
   const set = (k: keyof typeof form, v: string) =>
     setForm((s) => ({ ...s, [k]: v }));
@@ -29,8 +32,8 @@ const SignUp: React.FC = () => {
     if (!form.gender) return "Please select a gender.";
     if (!form.birthday) return "Birthdate is required.";
     if (!form.email) return "Email is required.";
-    if (!form.phone) return "Phone is required.";
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email)) return "Enter a valid email.";
+    if (!form.phone) return "Phone is required.";
     if (!form.password || form.password.length < 8)
       return "Password must be at least 8 characters.";
     if (form.password !== form.confirm) return "Passwords do not match.";
@@ -39,22 +42,32 @@ const SignUp: React.FC = () => {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setLocalError("");
     const v = validate();
-    if (v) return setError(v);
+    if (v) return setLocalError(v);
 
     try {
-      setLoading(true);
+      await signupPatient({
+        email: form.email,
+        password: form.password,
+        first_name: form.first_name,
+        last_name: form.last_name,
+        phone: form.phone,
+        birthday: form.birthday,
+        gender: form.gender as "M" | "W",
+        role: "Patient",
+      });
+      if (isDoctor) nav("/doctor");
+      else if (isPatient) nav("/patient");
+      else nav("/");
     } catch {
-      setError("Could not create account. Please try again.");
-    } finally {
-      setLoading(false);
+      console.log("Something wrong happened!")
     }
   };
 
   return (
     <>
-      {error && <Alert variant="danger">{error}</Alert>}
+      {(localError || error) && <Alert variant="danger">{localError || error}</Alert>}
       <Form onSubmit={onSubmit} noValidate>
         <Row className="g-3">
           <Col md={6}>
@@ -64,7 +77,8 @@ const SignUp: React.FC = () => {
                 value={form.first_name}
                 onChange={(e) => set("first_name", e.target.value)}
                 required
-                placeholder="First name"
+                placeholder="John"
+                autoComplete="given-name"
               />
             </Form.Group>
           </Col>
@@ -75,7 +89,8 @@ const SignUp: React.FC = () => {
                 value={form.last_name}
                 onChange={(e) => set("last_name", e.target.value)}
                 required
-                placeholder="Last name"
+                placeholder="Doe"
+                autoComplete="family-name"
               />
             </Form.Group>
           </Col>
@@ -88,9 +103,9 @@ const SignUp: React.FC = () => {
                 onChange={(e) => set("gender", e.target.value)}
                 required
               >
-                <option value="">Select</option>
-                <option value="female">Female</option>
-                <option value="male">Male</option>
+                <option value="">Select...</option>
+                <option value="M">Male</option>
+                <option value="W">Female</option>
               </Form.Select>
             </Form.Group>
           </Col>
@@ -103,6 +118,7 @@ const SignUp: React.FC = () => {
                 value={form.birthday}
                 onChange={(e) => set("birthday", e.target.value)}
                 required
+                autoComplete="bday"
               />
             </Form.Group>
           </Col>
@@ -111,11 +127,12 @@ const SignUp: React.FC = () => {
             <Form.Group controlId="suPhone">
               <Form.Label>Phone</Form.Label>
               <Form.Control
-                type="phone"
+                type="tel"
                 value={form.phone}
-                placeholder="+355 690000000"
+                placeholder="+355 69 1234567"
                 onChange={(e) => set("phone", e.target.value)}
                 required
+                autoComplete="tel"
               />
             </Form.Group>
           </Col>
@@ -125,10 +142,11 @@ const SignUp: React.FC = () => {
               <Form.Label>Email</Form.Label>
               <Form.Control
                 type="email"
-                placeholder="Enter your email"
+                placeholder="john.doe@example.com"
                 value={form.email}
                 onChange={(e) => set("email", e.target.value)}
                 required
+                autoComplete="email"
               />
             </Form.Group>
           </Col>
@@ -142,6 +160,7 @@ const SignUp: React.FC = () => {
                 value={form.password}
                 onChange={(e) => set("password", e.target.value)}
                 required
+                autoComplete="new-password"
               />
             </Form.Group>
           </Col>
@@ -155,6 +174,7 @@ const SignUp: React.FC = () => {
                 value={form.confirm}
                 onChange={(e) => set("confirm", e.target.value)}
                 required
+                autoComplete="new-password"
               />
             </Form.Group>
           </Col>

@@ -1,5 +1,6 @@
 export type PatientItem = {
   id: number;
+  phone?: string;
   user?: {
     id?: number;
     email?: string;
@@ -15,6 +16,7 @@ export type PatientItem = {
     risk_factors?: string;
     insurance_provider?: string;
   }
+  result?: any;
 };
 
 export type PatientsResponse = {

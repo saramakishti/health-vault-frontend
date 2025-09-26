@@ -1,10 +1,14 @@
 export type ConsentItem = {
-  id: number;
-  scope?: string;
-  expires_at?: string;
-  is_active?: boolean;
-  patient?: any;
+  date_created?: string;
+  date_last_updated?: string;
   doctor?: any;
+  doctor_email?: string;
+  expires_at?: string;
+  id: number;
+  is_active?: boolean;
+  scope?: string;
+  patient?: any;
+  patient_email?: string;
   created_at?: string;
   updated_at?: string;
 };

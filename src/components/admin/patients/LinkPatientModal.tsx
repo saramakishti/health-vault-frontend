@@ -7,22 +7,7 @@ import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
 import { useApi } from "../../../hooks/useApi";
 import type { ConsentItem } from "../../../types/consent";
-
-type PatientLike = {
-  id: number;
-  user?: { id?: number; email?: string; first_name?: string; last_name?: string };
-  email?: string;
-  first_name?: string;
-  last_name?: string;
-};
-
-type DoctorLike = {
-  id: number;
-  user?: { id?: number; email?: string; first_name?: string; last_name?: string };
-  email?: string;
-  first_name?: string;
-  last_name?: string;
-};
+import type { DoctorLike, PatientLike } from "../../../types/common";
 
 type Props = {
   show: boolean;

@@ -17,15 +17,13 @@ import { Col, Row } from "react-bootstrap";
 
 const PatientManagement: React.FC = () => {
 
-  const { user } = useAuth();
   const { get, del, patch, loading, error } = useApi();
 
   const [consents, setConsents] = useState<ConsentItem[]>([]);
   const [count, setCount] = useState<number>(0);
   const [page, setPage] = useState(1);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [extendFor, setExtendFor] = useState<{ id: number; expires_at?: string } | null>(null);
-
+  const [extendFor, setExtendFor] = useState<ConsentItem | null>(null);
   const [showPatientSearch, setShowPatientSearch] = useState(false);
   const [showDoctorSearch, setShowDoctorSearch] = useState(false);
   const [showLink, setShowLink] = useState(false);
@@ -43,8 +41,8 @@ const PatientManagement: React.FC = () => {
           ordering: "-id",
         },
       });
-      const items = res.result ?? res.result ?? [];
-      const total = res.pagination?.count ?? res?.pagination?.count ?? items.length;
+      const items = res.result ?? [];
+      const total = res.pagination?.count ?? items.length;
       setConsents(items);
       setCount(total);
     } catch (e: any) {
@@ -67,13 +65,6 @@ const PatientManagement: React.FC = () => {
     return <Badge bg="warning" text="dark">Paused</Badge>;
   };
 
-  const patientLabel = (p: any) => {
-    if (!p) return "—";
-    const u = p.user || p;
-    const name = [u.first_name, u.last_name].filter(Boolean).join(" ");
-    return name || u.email || `Patient #${u.id ?? p}`;
-  };
-
   const onUnlink = async (consentId: number) => {
     if (!window.confirm("Unlink this patient? They will be removed from your list.")) return;
     setFetchError(null);
@@ -87,12 +78,20 @@ const PatientManagement: React.FC = () => {
 
   const onToggleActive = async (c: ConsentItem) => {
     try {
-      await patch(`/profiles/consents/${c.id}/`, { is_active: !c.is_active });
+      const payload = {
+        patient: (c.patient as any)?.id ?? c.patient,
+        doctor: (c.doctor as any)?.id ?? c.doctor,
+        scope: c.scope ?? "ANALYSES",
+        expires_at: c.expires_at,
+        is_active: !c.is_active,
+      };
+      await patch(`/profiles/consents/${c.id}/`, payload);
       await load();
     } catch (e: any) {
       setFetchError(e?.message || "Failed to update consent status.");
     }
   };
+
 
 
   return (
@@ -141,7 +140,8 @@ const PatientManagement: React.FC = () => {
               <thead className="table-light">
                 <tr>
                   <th style={{ width: 60 }}>#</th>
-                  <th>Patient</th>
+                  <th>Patient Email</th>
+                  <th>Doctor Email</th>
                   <th>Scope</th>
                   <th>Expires</th>
                   <th>Status</th>
@@ -151,15 +151,16 @@ const PatientManagement: React.FC = () => {
               <tbody>
                 {loading && !consents.length ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-5">
+                    <td colSpan={7} className="text-center py-5">
                       <Spinner animation="border" />
                     </td>
                   </tr>
                 ) : consents.length ? (
-                  consents.map((c) => (
+                  consents.map((c, index) => (
                     <tr key={c.id}>
-                      <td className="text-muted">{c.id}</td>
-                      <td className="fw-semibold">{patientLabel(c.patient)}</td>
+                      <td className="text-muted">{++index}</td>
+                      <td className="fw-semibold">{c.patient_email}</td>
+                      <td className="fw-semibold">{c.doctor_email}</td>
                       <td>{c.scope || "ANALYSES"}</td>
                       <td>{fmtDate(c.expires_at)}</td>
                       <td>{statusBadge(c.is_active, c.expires_at)}</td>
@@ -168,7 +169,7 @@ const PatientManagement: React.FC = () => {
                           <Button
                             size="sm"
                             variant="outline-primary"
-                            onClick={() => setExtendFor({ id: c.id, expires_at: c.expires_at })}
+                            onClick={() => setExtendFor(c)}
                           >
                             Extend
                           </Button>
@@ -194,7 +195,7 @@ const PatientManagement: React.FC = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="text-center text-muted py-5">
+                    <td colSpan={7} className="text-center text-muted py-5">
                       No linked patients yet.
                     </td>
                   </tr>
@@ -236,7 +237,7 @@ const PatientManagement: React.FC = () => {
         onSelect={(p) => {
           setSelectedPatient(p);
           setShowPatientSearch(false);
-          setShowDoctorSearch(true);     // next step: pick doctor
+          setShowDoctorSearch(true);
         }}
       />
 
@@ -266,13 +267,9 @@ const PatientManagement: React.FC = () => {
 
       <ExtendExpiryModal
         show={!!extendFor}
-        consentId={extendFor?.id}
-        currentExpiry={extendFor?.expires_at ?? null}
+        consent={extendFor}
         onClose={() => setExtendFor(null)}
-        onSaved={() => {
-          setExtendFor(null);
-          void load();
-        }}
+        onSaved={() => { setExtendFor(null); void load(); }}
       />
     </>
   )

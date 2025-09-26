@@ -3,7 +3,9 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
+import Alert from "react-bootstrap/Alert";
 import { useAuth } from "../../auth/AuthContext";
+import PatientsTable from "./PatientsTable";
 
 const DoctorView: React.FC = () => {
   const { user, logout } = useAuth();
@@ -22,7 +24,6 @@ const DoctorView: React.FC = () => {
     }
   };
 
-
   return (
     <Container className="py-4">
       <Row className="align-items-center mb-3">
@@ -35,6 +36,12 @@ const DoctorView: React.FC = () => {
           </Button>
         </Col>
       </Row>
+
+      {!user?.id ? (
+        <Alert variant="warning">No doctor account detected.</Alert>
+      ) : (
+        <PatientsTable doctorId={user.id} />
+      )}
     </Container>
   );
 };

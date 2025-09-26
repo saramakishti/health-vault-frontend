@@ -4,8 +4,11 @@ import ProtectedRoute from "./auth/ProtectedRoute";
 
 import LandingPage from "./components/LandingPage";
 import DoctorView from "./components/doctor/DoctorView";
-import PatientView from "./components/PatientView";
 import AdminView from "./components/admin/AdminView";
+import PatientWorkspace from "./components/doctor/PatientWorkspace";
+import PatientView from "./components/patient/PatientView";
+import AnalysisPanel from "./components/doctor/analyses/AnalysisPanel";
+import AnalysisDetailPage from "./components/doctor/analyses/AnalysisDetailPage";
 
 function AppRoutes() {
   const { isAuthenticated, isDoctor, isPatient, isAdmin } = useAuth();
@@ -22,6 +25,20 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      <Route path="/doctor/patients/:id" element={
+        <ProtectedRoute isAllowed={isDoctor}>
+          <PatientWorkspace />
+        </ProtectedRoute>}
+      />
+
+      <Route path="/doctor/patients/:patientId/analyses/:analysisId" element={
+        <ProtectedRoute isAllowed={isDoctor}>
+          <AnalysisDetailPage />
+        </ProtectedRoute>}
+      />
+
+
       <Route
         path="/patient"
         element={
